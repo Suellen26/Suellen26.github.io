@@ -1,0 +1,1374 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>星光语录 - 银河与星系</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600&family=Inter:wght@300;400;500&display=swap');
+        
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+            font-family: 'Noto Serif SC', serif;
+        }
+        
+        .cosmic-bg {
+            background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
+        }
+        
+        .glass-panel {
+            background: rgba(15, 20, 35, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .galaxy-card {
+            transition: all 0.2s ease;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .galaxy-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        .galaxy-card.active {
+            background: rgba(147, 197, 253, 0.2);
+            border-color: rgba(147, 197, 253, 0.5);
+        }
+        
+        /* 列表项样式 - 核心修改：重构布局结构 + 优化边距和间距 */
+        .star-list-item {
+            transition: all 0.2s;
+            cursor: pointer;
+            position: relative;
+            padding: 8px 12px !important; /* 1. 增加上下左右内边距，让内容更宽松 */
+            margin-bottom: 6px; /* 增加列表项之间的上下间距 */
+        }
+        .star-list-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(4px);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        /* 下拉菜单优化 - 调整位置为左对齐，固定宽度 */
+        .galaxy-select {
+            appearance: none;
+            -webkit-appearance: none;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            padding: 6px 28px 6px 10px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.8);
+            cursor: pointer;
+            width: 110px; /* 固定宽度保证对齐 */
+            min-width: unset; /* 取消最小宽度限制 */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.5)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 14px;
+            pointer-events: auto;
+            z-index: 10;
+            /* 2. 星系选择框左移调整 */
+            margin-left: -8px;
+        }
+        .galaxy-select:hover {
+            border-color: rgba(255, 255, 255, 0.4);
+            background-color: rgba(255,255,255,0.05);
+        }
+        .galaxy-select:focus {
+            outline: none;
+            border-color: rgba(147, 197, 253, 0.6);
+            background-color: rgba(147,197,253,0.1);
+        }
+        .galaxy-select option {
+            background: #1a1f2e;
+            color: white;
+            padding: 8px;
+            font-size: 12px;
+        }
+        
+        /* 移除多余的select-wrapper样式 */
+        .select-wrapper {
+            pointer-events: auto;
+            z-index: 20;
+            width: 110px;
+        }
+        
+        /* 飞行模式 */
+        .flight-text {
+            font-size: 1.75rem;
+            line-height: 1.8;
+            text-shadow: 0 0 40px rgba(255, 255, 255, 0.3), 0 0 80px rgba(255, 255, 255, 0.1);
+            animation: breathe 4s ease-in-out infinite;
+        }
+        
+        @media (min-width: 768px) {
+            .flight-text {
+                font-size: 2rem;
+            }
+        }
+        
+        @keyframes breathe {
+            0%, 100% { opacity: 0.9; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.02); }
+        }
+        
+        /* 观星模式标签 */
+        .star-label {
+            position: absolute;
+            pointer-events: none;
+            font-size: 12px;
+            max-width: 200px;
+            line-height: 1.4;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.5s ease;
+        }
+        .star-label.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        @keyframes emerge {
+            0% { opacity: 0; transform: scale(0.9); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .input-emerge {
+            animation: emerge 0.3s ease-out forwards;
+        }
+        
+        @keyframes meteor {
+            0% { transform: translateX(0) translateY(0) rotate(-45deg) scale(1); opacity: 1; }
+            100% { transform: translateX(-300px) translateY(300px) rotate(-45deg) scale(0); opacity: 0; }
+        }
+        .meteor {
+            position: absolute;
+            width: 100px;
+            height: 2px;
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0) 100%);
+            animation: meteor 2s ease-out forwards;
+            pointer-events: none;
+        }
+        
+        @keyframes nebulaFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.3; }
+            33% { transform: translate(30px, -30px) scale(1.1); opacity: 0.4; }
+            66% { transform: translate(-20px, 20px) scale(0.9); opacity: 0.25; }
+        }
+        .nebula {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            pointer-events: none;
+            animation: nebulaFloat 20s ease-in-out infinite;
+        }
+        
+        /* 优化滚动条样式 - 更细更贴合设计 */
+        ::-webkit-scrollbar {
+            width: 4px; /* 更细的滚动条 */
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.02);
+            border-radius: 2px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 2px;
+            transition: background 0.2s;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+        
+        .cosmic-input {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.3s;
+        }
+        .cosmic-input:focus {
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
+            outline: none;
+        }
+        
+        /* 防止文本选择影响点击 */
+        .no-select {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        
+        /* 新增：列表项对齐样式 */
+        .star-content-wrapper {
+            padding-left: 8px; /* 统一缩进，保证星语首字对齐 */
+            padding-top: 2.3px; /* 统一缩进，保证星语首字对齐 */
+        }
+        .star-author-wrapper {
+            padding-left: 5.4ch; /* 核心修改：仅署名向右移动1个字符 */
+        }
+    </style>
+</head>
+<body class="cosmic-bg text-white h-screen w-screen relative overflow-hidden">
+
+    <!-- 星云背景 -->
+    <div id="nebulaLayer" class="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        <div class="nebula w-[600px] h-[600px] bg-purple-600/30 top-[-100px] left-[-100px]" style="animation-delay: 0s;"></div>
+        <div class="nebula w-[500px] h-[500px] bg-blue-600/30 bottom-[10%] right-[20%]" style="animation-delay: -7s;"></div>
+        <div class="nebula w-[400px] h-[400px] bg-cyan-600/20 top-[40%] left-[30%]" style="animation-delay: -14s;"></div>
+    </div>
+
+    <!-- 流星层 -->
+    <div id="meteorLayer" class="absolute inset-0 z-10 pointer-events-none overflow-hidden"></div>
+
+    <!-- 观星模式标签层 -->
+    <div id="starLabels" class="absolute inset-0 z-15 pointer-events-none overflow-hidden"></div>
+
+    <canvas id="universe" class="absolute inset-0 z-20 cursor-pointer"></canvas>
+
+    <!-- 顶部栏 -->
+    <header class="absolute top-0 left-0 right-80 z-30 flex justify-between items-center p-6 pointer-events-none">
+        <div class="flex items-center gap-3 pointer-events-auto">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center shadow-lg">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-xl font-light tracking-wider text-white/90">星光语录</h1>
+                <p class="text-xs text-white/40 tracking-widest">银河与星系</p>
+            </div>
+        </div>
+        
+        <div class="flex gap-2 pointer-events-auto">
+            <button onclick="app.startFlight()" class="glass-card px-5 py-2.5 rounded-full text-sm hover:bg-white/10 transition-all flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+                <span>宇宙飞行</span>
+            </button>
+            <button onclick="app.toggleStargazing()" id="stargazeBtn" class="glass-card px-5 py-2.5 rounded-full text-sm hover:bg-white/10 transition-all flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                </svg>
+                <span>观星模式</span>
+            </button>
+            <!-- 新增：星系排布按钮 -->
+            <button onclick="app.toggleGalaxyLayout()" id="galaxyLayoutBtn" class="glass-card px-5 py-2.5 rounded-full text-sm hover:bg-white/10 transition-all flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.86 4.64a9 9 0 0 1 8.28 0M4.64 7.86a9 9 0 0 1 0 8.28M7.86 19.36a9 9 0 0 1-8.28 0M19.36 16.14a9 9 0 0 1 0-8.28"></path>
+                </svg>
+                <span>星系排布</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- 飞行模式 -->
+    <div id="flightMode" class="fixed inset-0 z-40 flex flex-col items-center justify-center pointer-events-none opacity-0 transition-opacity duration-700 bg-black/70 backdrop-blur-sm">
+        <div class="text-center max-w-3xl px-12 pointer-events-auto relative">
+            <div class="absolute -top-16 left-1/2 -translate-x-1/2">
+                <!-- ✅ 已删除蓝底 · 仅保留金黄色星星 + 暖黄光晕 -->
+                <div class="w-12 h-12 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-yellow-300 drop-shadow-[0_0_15px_rgba(255,215,0,0.9)]" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 0L14.752 7.26L22 9.27L16.138 14.14L17.67 21.27L12 17.77L6.33 21.27L7.862 14.14L2 9.27L9.248 7.26L12 0z"/>
+                    </svg>
+                </div>
+            </div>
+            
+            <p id="flightText" class="flight-text text-white/95 mb-6 font-light tracking-wide"></p>
+            <div class="flex items-center justify-center gap-3 text-white/50 text-sm mb-8">
+                <span id="flightAuthor" class="italic"></span>
+                <span id="flightAuthorSeparator" class="w-1 h-1 rounded-full bg-white/30 hidden"></span>
+                <span id="flightGalaxy"></span>
+                <span class="w-1 h-1 rounded-full bg-white/30"></span>
+                <span id="flightDate"></span>
+            </div>
+        </div>
+        
+        <div class="absolute bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-8 text-white/40 text-sm pointer-events-auto">
+            <button onclick="app.prevFlight()" class="hover:text-white/80 transition-colors flex items-center gap-2 px-4 py-2 rounded-full hover:bg-white/10">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                上一颗
+            </button>
+            <span id="flightCounter" class="font-mono text-white/60">1 / 1</span>
+            <button onclick="app.nextFlight()" class="hover:text-white/80 transition-colors flex items-center gap-2 px-4 py-2 rounded-full hover:bg-white/10">
+                下一颗
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </button>
+        </div>
+        
+        <button onclick="app.endFlight()" class="absolute top-6 right-6 text-white/30 hover:text-white/80 transition-colors pointer-events-auto p-2">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+    </div>
+
+    <!-- 星星输入框 -->
+    <div id="starInput" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-panel rounded-2xl p-8 w-full max-w-lg mx-4 border border-white/10 shadow-2xl input-emerge">
+            <textarea id="starText" rows="3" class="w-full bg-transparent border-none text-white placeholder-white/30 focus:outline-none resize-none text-xl leading-relaxed text-center" placeholder="在此刻写下星光..."></textarea>
+            <input type="text" id="starAuthor" class="w-full bg-transparent border-t border-white/10 mt-4 pt-3 text-sm text-white/50 placeholder-white/20 focus:outline-none text-center" placeholder="署名（可选）">
+            <div class="flex justify-center gap-3 mt-6">
+                <button onclick="app.cancelInput()" class="px-4 py-2 rounded-full text-xs text-white/40 hover:text-white/70 transition-colors">取消</button>
+                <button onclick="app.confirmStar()" class="px-6 py-2 rounded-full bg-white text-black text-xs font-medium hover:bg-blue-50 transition-colors">点亮星光</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 查看浮窗 -->
+    <div id="viewStar" class="fixed z-40 hidden pointer-events-none">
+        <div class="glass-panel rounded-xl px-4 py-3 border border-white/10 max-w-xs">
+            <p id="viewText" class="text-sm leading-relaxed text-white/90"></p>
+            <p id="viewMeta" class="text-xs text-white/40 mt-2"></p>
+        </div>
+    </div>
+
+    <!-- 右侧边栏 -->
+    <aside class="absolute right-0 top-0 bottom-0 w-80 glass-panel flex flex-col z-30 shadow-2xl">
+        <div class="p-6 border-b border-white/10">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="text-lg font-light text-white/90">星系图鉴</h2>
+                <button onclick="app.createGalaxy()" class="text-xs border border-white/20 px-3 py-1.5 rounded-full hover:bg-white/10 transition-colors">
+                    + 新星系
+                </button>
+            </div>
+            <p class="text-xs text-white/40">点击星系展开列表</p>
+        </div>
+
+        <div id="galaxyList" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+    </aside>
+
+    <!-- 星系详情 - 列表浏览模式 -->
+    <div id="galaxyDetail" class="absolute right-80 top-0 w-80 h-full glass-panel border-l border-white/10 transform transition-transform duration-300 translate-x-full z-30 flex flex-col">
+        <div class="p-6 border-b border-white/10 flex justify-between items-center flex-shrink-0">
+            <div>
+                <h3 id="detailGalaxyName" class="text-lg font-light text-white/90"></h3>
+                <p class="text-xs text-white/40 mt-1"><span id="detailStarCount">0</span> 颗星光</p>
+            </div>
+            <button onclick="app.closeGalaxyDetail()" class="text-white/40 hover:text-white p-1">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        
+        <!-- 操作栏 -->
+        <div class="p-4 border-b border-white/10 space-y-2 flex-shrink-0">
+            <button onclick="app.lightUpThisGalaxy()" class="w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 transition-colors text-sm flex items-center justify-center gap-2 border border-white/10">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+                点亮星系
+            </button>
+            <button onclick="app.flightThisGalaxy()" class="w-full py-3 rounded-xl glass-card hover:bg-white/10 transition-colors text-sm flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                星系飞行
+            </button>
+        </div>
+        
+        <div id="galaxyStarsList" class="overflow-y-auto p-4 space-y-3 flex-1"></div>
+    </div>
+
+    <!-- 创建星系模态框 -->
+    <div id="galaxyModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm">
+        <div class="glass-panel rounded-2xl p-6 w-full max-w-sm mx-4 border border-white/10">
+            <h3 class="text-lg font-light text-white/90 mb-4">命名新星系</h3>
+            <input type="text" id="galaxyName" class="w-full cosmic-input rounded-xl p-3 text-white placeholder-white/20 mb-4 text-center" placeholder="例如：土豆星系、兔子星系...">
+            <div class="flex gap-3">
+                <button onclick="app.closeGalaxyModal()" class="flex-1 py-2 rounded-xl border border-white/20 text-white/70 hover:bg-white/5 transition-all text-sm">取消</button>
+                <button onclick="app.confirmCreateGalaxy()" class="flex-1 py-2 rounded-xl bg-white text-black font-medium hover:bg-blue-50 transition-all text-sm">创建</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class StarryUniverse {
+            constructor() {
+                this.canvas = document.getElementById('universe');
+                this.ctx = this.canvas.getContext('2d');
+                this.stars = [];
+                this.bgStars = [];
+                this.galaxies = [];
+                this.draggedStar = null;
+                this.hoveredStar = null;
+                this.inputStar = null;
+                
+                this.inFlight = false;
+                this.flightIndex = 0;
+                this.flightGalaxyId = null;
+                
+                this.inStargazing = false;
+                this.stargazeGalaxyId = null;
+
+                // 新增：星系排布模式
+                this.inGalaxyLayout = false;
+                
+                this.currentDetailGalaxyId = null;
+                
+                this.colors = [
+                    '#93C5FD', '#C4B5FD', '#FCD34D', '#FCA5A5', 
+                    '#6EE7B7', '#F9A8D4', '#67E8F9', '#FDBA74',
+                    '#A5B4FC', '#C084FC', '#F472B6', '#38BDF8'
+                ];
+                
+                this.init();
+            }
+            
+            init() {
+                this.loadData();
+                this.generateBgStars();
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+                this.bindEvents();
+                this.renderGalaxyList();
+                this.startMeteorShower();
+                this.animate();
+            }
+            
+            loadData() {
+                const defaultGalaxies = [
+                    { id: 'potato', name: '土豆星系', icon: '🥔' },
+                    { id: 'rabbit', name: '兔子星系', icon: '🐰' },
+                    { id: 'dream', name: '梦境星云', icon: '🌙' }
+                ];
+                
+                const defaultStars = [
+                    { id: 1, x: 0.2, y: 0.3, content: "愿所有深夜里的心事，都能化作星光被温柔接住。", author: "夜行者", color: '#93C5FD', size: 5, hasContent: true, galaxyId: null, created: '2026-03-31' },
+                    { id: 2, x: 0.7, y: 0.2, content: "有些话语不适合说出口，但适合挂在天上。", author: "", color: '#C4B5FD', size: 4, hasContent: true, galaxyId: null, created: '2026-03-31' },
+                    { id: 3, x: 0.5, y: 0.6, content: "银河之所以美丽，是因为每一颗星都有自己的故事。", author: "观星人", color: '#FCD34D', size: 5, hasContent: true, galaxyId: 'dream', created: '2026-03-31' },
+                    { id: 4, x: 0.15, y: 0.7, content: "土豆是宇宙的终极答案。", author: "哲学家", color: '#FCA5A5', size: 4, hasContent: true, galaxyId: 'potato', created: '2026-03-31' },
+                    { id: 5, x: 0.8, y: 0.5, content: "兔子跳向月亮，我在人间仰望。", author: "", color: '#6EE7B7', size: 4, hasContent: true, galaxyId: 'rabbit', created: '2026-03-31' }
+                ];
+                
+                const saved = localStorage.getItem('starryUniverse_v7');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    this.stars = data.stars || [];
+                    this.galaxies = data.galaxies || defaultGalaxies;
+                } else {
+                    this.stars = defaultStars;
+                    this.galaxies = defaultGalaxies;
+                }
+                
+                this.stars.forEach(star => {
+                    if (!star.vx) star.vx = (Math.random() - 0.5) * 0.15;
+                    if (!star.vy) star.vy = (Math.random() - 0.5) * 0.15;
+                    if (!star.twinkle) star.twinkle = Math.random() * Math.PI * 2;
+                    if (!star.hasContent) star.hasContent = true;
+                });
+            }
+            
+            saveData() {
+                localStorage.setItem('starryUniverse_v7', JSON.stringify({
+                    stars: this.stars,
+                    galaxies: this.galaxies
+                }));
+                this.renderGalaxyList();
+            }
+            
+            generateBgStars() {
+                for (let i = 0; i < 200; i++) {
+                    this.bgStars.push({
+                        x: Math.random(),
+                        y: Math.random(),
+                        size: 0.5 + Math.random() * 2,
+                        alpha: 0.1 + Math.random() * 0.4,
+                        twinkleSpeed: 0.01 + Math.random() * 0.03,
+                        twinkle: Math.random() * Math.PI * 2
+                    });
+                }
+            }
+            
+            startMeteorShower() {
+                setInterval(() => {
+                    if (Math.random() > 0.3) this.createMeteor();
+                }, 2000);
+                setTimeout(() => this.createMeteor(), 1000);
+            }
+            
+            createMeteor() {
+                const meteor = document.createElement('div');
+                meteor.className = 'meteor';
+                meteor.style.top = Math.random() * 50 + '%';
+                meteor.style.left = (50 + Math.random() * 50) + '%';
+                document.getElementById('meteorLayer').appendChild(meteor);
+                setTimeout(() => meteor.remove(), 2000);
+            }
+            
+            resize() {
+                this.canvas.width = window.innerWidth - 320;
+                this.canvas.height = window.innerHeight;
+                this.updateStarLabels();
+            }
+            
+            bindEvents() {
+                this.canvas.addEventListener('mousedown', (e) => {
+                    if (this.inFlight) return;
+                    
+                    const rect = this.canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    const normX = x / this.canvas.width;
+                    const normY = y / this.canvas.height;
+                    
+                    for (let star of this.stars) {
+                        const sx = star.x * this.canvas.width;
+                        const sy = star.y * this.canvas.height;
+                        const dist = Math.hypot(x - sx, y - sy);
+                        
+                        if (dist < 30) {
+                            this.draggedStar = star;
+                            star.isDragging = false;
+                            star.dragStartX = e.clientX;
+                            star.dragStartY = e.clientY;
+                            return;
+                        }
+                    }
+                    
+                    for (let i = 0; i < this.bgStars.length; i++) {
+                        const bg = this.bgStars[i];
+                        const bx = bg.x * this.canvas.width;
+                        const by = bg.y * this.canvas.height;
+                        const dist = Math.hypot(x - bx, y - by);
+                        
+                        if (dist < 15) {
+                            const newStar = {
+                                id: Date.now(),
+                                x: bg.x,
+                                y: bg.y,
+                                content: '',
+                                author: '',
+                                color: this.colors[Math.floor(Math.random() * this.colors.length)],
+                                size: 3,
+                                hasContent: false,
+                                galaxyId: null,
+                                created: new Date().toLocaleDateString(),
+                                vx: (Math.random() - 0.5) * 0.15,
+                                vy: (Math.random() - 0.5) * 0.15,
+                                twinkle: Math.random() * Math.PI * 2
+                            };
+                            this.stars.push(newStar);
+                            this.bgStars.splice(i, 1);
+                            this.openStarInput(newStar);
+                            return;
+                        }
+                    }
+                    
+                    const newStar = {
+                        id: Date.now(),
+                        x: normX,
+                        y: normY,
+                        content: '',
+                        author: '',
+                        color: this.colors[Math.floor(Math.random() * this.colors.length)],
+                        size: 3,
+                        hasContent: false,
+                        galaxyId: null,
+                        created: new Date().toLocaleDateString(),
+                        vx: (Math.random() - 0.5) * 0.15,
+                        vy: (Math.random() - 0.5) * 0.15,
+                        twinkle: Math.random() * Math.PI * 2
+                    };
+                    this.stars.push(newStar);
+                    this.openStarInput(newStar);
+                });
+                
+                this.canvas.addEventListener('mousemove', (e) => {
+                    const rect = this.canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    
+                    if (this.draggedStar) {
+                        const moveDist = Math.hypot(e.clientX - this.draggedStar.dragStartX, e.clientY - this.draggedStar.dragStartY);
+                        
+                        if (moveDist > 3) {
+                            this.draggedStar.isDragging = true;
+                            let newX = x / this.canvas.width;
+                            let newY = y / this.canvas.height;
+                            newX = Math.max(0.02, Math.min(0.98, newX));
+                            newY = Math.max(0.02, Math.min(0.98, newY));
+                            
+                            this.draggedStar.x = newX;
+                            this.draggedStar.y = newY;
+                            this.canvas.style.cursor = 'grabbing';
+                            this.updateStarLabels();
+                        }
+                    } else {
+                        let found = null;
+                        for (let star of this.stars) {
+                            const sx = star.x * this.canvas.width;
+                            const sy = star.y * this.canvas.height;
+                            const dist = Math.hypot(x - sx, y - sy);
+                            if (dist < (star.hasContent ? 30 : 20)) {
+                                found = star;
+                                break;
+                            }
+                        }
+                        
+                        if (!found) {
+                            for (let bg of this.bgStars) {
+                                const bx = bg.x * this.canvas.width;
+                                const by = bg.y * this.canvas.height;
+                                const dist = Math.hypot(x - bx, y - by);
+                                if (dist < 15) {
+                                    this.canvas.style.cursor = 'pointer';
+                                    this.hoveredStar = null;
+                                    return;
+                                }
+                            }
+                        }
+                        
+                        this.hoveredStar = found;
+                        this.canvas.style.cursor = found ? 'pointer' : 'crosshair';
+                        
+                        if (found && found.hasContent && !this.inStargazing) {
+                            this.showViewTooltip(found, e.clientX, e.clientY);
+                        } else {
+                            document.getElementById('viewStar').classList.add('hidden');
+                        }
+                    }
+                });
+                
+                window.addEventListener('mouseup', (e) => {
+                    if (this.draggedStar) {
+                        const star = this.draggedStar;
+                        if (!star.isDragging) {
+                            if (star.hasContent) this.openStarInput(star);
+                        } else {
+                            this.saveData();
+                        }
+                        star.isDragging = false;
+                        this.draggedStar = null;
+                        this.canvas.style.cursor = 'crosshair';
+                    }
+                });
+                
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        this.endFlight();
+                        this.endStargazing();
+                        this.cancelInput();
+                        this.closeGalaxyDetail();
+                        document.getElementById('viewStar').classList.add('hidden');
+                    } else if (this.inFlight) {
+                        if (e.key === 'ArrowLeft') this.prevFlight();
+                        if (e.key === 'ArrowRight') this.nextFlight();
+                    }
+                });
+            }
+            
+            openStarInput(star) {
+                this.inputStar = star;
+                document.getElementById('starInput').classList.remove('hidden');
+                document.getElementById('starInput').classList.add('flex');
+                document.getElementById('starText').value = star.content || '';
+                document.getElementById('starAuthor').value = star.author || '';
+                setTimeout(() => document.getElementById('starText').focus(), 100);
+            }
+            
+            cancelInput() {
+                document.getElementById('starInput').classList.add('hidden');
+                document.getElementById('starInput').classList.remove('flex');
+                
+                if (this.inputStar && !this.inputStar.hasContent && !this.inputStar.content) {
+                    this.stars = this.stars.filter(s => s.id !== this.inputStar.id);
+                    this.bgStars.push({
+                        x: this.inputStar.x,
+                        y: this.inputStar.y,
+                        size: 1 + Math.random() * 2,
+                        alpha: 0.2 + Math.random() * 0.4,
+                        twinkle: Math.random() * Math.PI * 2,
+                        twinkleSpeed: 0.01 + Math.random() * 0.03
+                    });
+                }
+                this.inputStar = null;
+            }
+            
+            confirmStar() {
+                if (!this.inputStar) return;
+                
+                const content = document.getElementById('starText').value.trim();
+                const author = document.getElementById('starAuthor').value.trim();
+                
+                if (!content) {
+                    this.cancelInput();
+                    return;
+                }
+                
+                this.inputStar.content = content;
+                this.inputStar.author = author;
+                this.inputStar.hasContent = true;
+                this.inputStar.size = 4 + Math.random() * 2;
+                
+                this.saveData();
+                this.cancelInput();
+                this.updateStarLabels();
+                
+                if (this.currentDetailGalaxyId !== null) {
+                    this.showGalaxyDetail(this.currentDetailGalaxyId);
+                }
+            }
+            
+            showViewTooltip(star, x, y) {
+                const tooltip = document.getElementById('viewStar');
+                document.getElementById('viewText').textContent = star.content.substring(0, 50) + (star.content.length > 50 ? '...' : '');
+                
+                // ✅ 游离银河统一显示图标 🌌
+                const galaxy = star.galaxyId ? this.galaxies.find(g => g.id === star.galaxyId) : { icon: '🌌', name: '游离银河' };
+                let metaText = '';
+                if (star.author) {
+                    metaText = star.author;
+                    if (galaxy) metaText += ` · ${galaxy.icon}`;
+                } else if (galaxy) {
+                    metaText = galaxy.icon;
+                }
+                document.getElementById('viewMeta').textContent = metaText;
+                
+                tooltip.style.left = Math.min(x + 10, window.innerWidth - 400) + 'px';
+                tooltip.style.top = Math.max(y - 50, 10) + 'px';
+                tooltip.classList.remove('hidden');
+            }
+            
+            // ========== 飞行模式 ==========
+            startFlight() {
+                const contentStars = this.stars.filter(s => s.hasContent);
+                if (contentStars.length === 0) return;
+                
+                this.inFlight = true;
+                this.flightGalaxyId = null;
+                this.flightIndex = Math.floor(Math.random() * contentStars.length);
+                
+                document.getElementById('flightMode').classList.remove('opacity-0', 'pointer-events-none');
+                this.updateFlightView();
+            }
+            
+            flightThisGalaxy() {
+                const stars = this.currentDetailGalaxyId 
+                    ? this.stars.filter(s => s.hasContent && s.galaxyId === this.currentDetailGalaxyId)
+                    : this.stars.filter(s => s.hasContent && !s.galaxyId);
+                
+                if (stars.length === 0) return;
+                
+                this.inFlight = true;
+                this.flightGalaxyId = this.currentDetailGalaxyId;
+                this.flightIndex = 0;
+                
+                this.closeGalaxyDetail();
+                document.getElementById('flightMode').classList.remove('opacity-0', 'pointer-events-none');
+                this.updateFlightView();
+            }
+            
+            endFlight() {
+                this.inFlight = false;
+                this.flightGalaxyId = null;
+                document.getElementById('flightMode').classList.add('opacity-0', 'pointer-events-none');
+                this.stars.forEach(s => s.isFlightActive = false);
+            }
+            
+            nextFlight() {
+                const stars = this.getFlightStars();
+                if (stars.length === 0) return;
+                this.flightIndex = (this.flightIndex + 1) % stars.length;
+                this.animateFlightTransition();
+            }
+            
+            prevFlight() {
+                const stars = this.getFlightStars();
+                if (stars.length === 0) return;
+                this.flightIndex = (this.flightIndex - 1 + stars.length) % stars.length;
+                this.animateFlightTransition();
+            }
+            
+            getFlightStars() {
+                if (this.flightGalaxyId) {
+                    return this.stars.filter(s => s.hasContent && s.galaxyId === this.flightGalaxyId);
+                }
+                return this.stars.filter(s => s.hasContent);
+            }
+            
+            animateFlightTransition() {
+                const content = document.querySelector('#flightMode > div:first-child');
+                content.style.opacity = '0';
+                content.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    this.updateFlightView();
+                    content.style.opacity = '1';
+                    content.style.transform = 'translateY(0)';
+                }, 200);
+            }
+            
+            updateFlightView() {
+                const stars = this.getFlightStars();
+                const star = stars[this.flightIndex];
+                
+                document.getElementById('flightText').textContent = star.content;
+                
+                const authorEl = document.getElementById('flightAuthor');
+                const authorSep = document.getElementById('flightAuthorSeparator');
+                
+                if (star.author) {
+                    authorEl.textContent = star.author;
+                    authorSep.classList.remove('hidden');
+                } else {
+                    authorEl.textContent = '';
+                    authorSep.classList.add('hidden');
+                }
+                
+                // ✅ 游离银河统一显示图标 🌌
+                const galaxy = star.galaxyId ? this.galaxies.find(g => g.id === star.galaxyId) : { icon: '🌌', name: '游离银河' };
+                document.getElementById('flightGalaxy').textContent = galaxy ? `${galaxy.icon} ${galaxy.name}` : '🌌 游离银河';
+                document.getElementById('flightDate').textContent = star.created;
+                document.getElementById('flightCounter').textContent = `${this.flightIndex + 1} / ${stars.length}`;
+                
+                this.stars.forEach(s => s.isFlightActive = (s.id === star.id));
+            }
+            
+            // ========== 观星模式 ==========
+            toggleStargazing() {
+                if (this.inStargazing) {
+                    this.endStargazing();
+                } else {
+                    this.startStargazing();
+                }
+            }
+            
+            startStargazing(galaxyId = null) {
+                this.inStargazing = true;
+                this.stargazeGalaxyId = galaxyId;
+                
+                const btn = document.getElementById('stargazeBtn');
+                btn.querySelector('span').textContent = '退出观星';
+                btn.classList.add('bg-white/20');
+                
+                // 优化：关闭星系详情面板，让视野更清晰
+                this.closeGalaxyDetail();
+                this.updateStarLabels();
+            }
+            
+            endStargazing() {
+                this.inStargazing = false;
+                this.stargazeGalaxyId = null;
+                
+                const btn = document.getElementById('stargazeBtn');
+                btn.querySelector('span').textContent = '观星模式';
+                btn.classList.remove('bg-white/20');
+                
+                document.getElementById('starLabels').innerHTML = '';
+            }
+            
+            lightUpThisGalaxy() {
+                // 优化：点亮星系按钮功能 - 观星模式下仅展示该星系的星光和星语
+                this.startStargazing(this.currentDetailGalaxyId);
+            }
+            
+            updateStarLabels() {
+                const container = document.getElementById('starLabels');
+                if (!this.inStargazing) {
+                    container.innerHTML = '';
+                    return;
+                }
+                
+                container.innerHTML = '';
+                
+                let starsToShow = this.stargazeGalaxyId 
+                    ? this.stars.filter(s => s.hasContent && s.galaxyId === this.stargazeGalaxyId)
+                    : this.stars.filter(s => s.hasContent);
+                
+                starsToShow.forEach((star, index) => {
+                    const label = document.createElement('div');
+                    label.className = 'star-label visible';
+                    
+                    const rect = this.canvas.getBoundingClientRect();
+                    const x = rect.left + star.x * this.canvas.width;
+                    const y = rect.top + star.y * this.canvas.height;
+                    
+                    let text = star.content;
+                    if (text.length > 35) text = text.substring(0, 35) + '...';
+                    
+                    // ✅ 游离银河统一显示图标 🌌
+                    const galaxy = star.galaxyId ? this.galaxies.find(g => g.id === star.galaxyId) : { icon: '🌌', name: '游离银河' };
+                    
+                    let metaHtml = '';
+                    if (star.author) {
+                        metaHtml = `<span>— ${star.author}</span>`;
+                        if (galaxy) metaHtml += ` <span>${galaxy.icon}</span>`;
+                    } else if (galaxy) {
+                        metaHtml = `<span>${galaxy.icon}</span>`;
+                    }
+                    
+                    label.innerHTML = `
+                        <div style="color: ${star.color}; text-shadow: 0 0 10px ${star.color}40, 0 0 20px rgba(0,0,0,0.9);">
+                            <div class="font-medium mb-1">"${text}"</div>
+                            <div class="text-xs opacity-70">${metaHtml}</div>
+                        </div>
+                    `;
+                    
+                    let left = x + 25;
+                    let top = y - 10;
+                    if (left + 200 > window.innerWidth - 320) left = x - 220;
+                    if (top < 0) top = y + 20;
+                    if (left < 0) left = 20;
+                    
+                    label.style.left = left + 'px';
+                    label.style.top = top + 'px';
+                    label.style.transitionDelay = (index * 0.08) + 's';
+                    
+                    container.appendChild(label);
+                });
+            }
+
+            // ====================== 新增：星系排布模式 ======================
+            toggleGalaxyLayout() {
+                if (this.inGalaxyLayout) {
+                    this.endGalaxyLayout();
+                } else {
+                    this.startGalaxyLayout();
+                }
+            }
+
+            startGalaxyLayout() {
+                this.inGalaxyLayout = true;
+                this.inStargazing = false;
+                this.inFlight = false;
+
+                const btn = document.getElementById('galaxyLayoutBtn');
+                btn.querySelector('span').textContent = '退出排布';
+                btn.classList.add('bg-white/20');
+
+                this.arrangeStarsByGalaxyShape();
+            }
+
+            endGalaxyLayout() {
+                this.inGalaxyLayout = false;
+
+                const btn = document.getElementById('galaxyLayoutBtn');
+                btn.querySelector('span').textContent = '星系排布';
+                btn.classList.remove('bg-white/20');
+
+                // 恢复星星随机位置
+                this.stars.forEach(s => {
+                    s.x = 0.05 + Math.random() * 0.9;
+                    s.y = 0.05 + Math.random() * 0.9;
+                });
+            }
+
+            arrangeStarsByGalaxyShape() {
+                const allStars = this.stars.filter(s => s.hasContent);
+                if (allStars.length === 0) return;
+
+                const galaxyMap = {
+                    dream: this.createMoonShape(),
+                    potato: this.createPotatoShape(),
+                    rabbit: this.createRabbitShape(),
+                    null: this.createMilkyWayShape()
+                };
+
+                // 按星系分组排布
+                for (const gId in galaxyMap) {
+                    const points = galaxyMap[gId];
+                    const stars = gId === 'null' 
+                        ? allStars.filter(s => !s.galaxyId)
+                        : allStars.filter(s => s.galaxyId === gId);
+
+                    stars.forEach((star, i) => {
+                        const idx = i % points.length;
+                        star.x = points[idx][0];
+                        star.y = points[idx][1];
+                    });
+                }
+            }
+
+            // 银河形状
+            createMilkyWayShape() {
+                return [
+                    [0.15,0.2],[0.25,0.22],[0.35,0.25],[0.45,0.27],[0.55,0.28],[0.65,0.27],[0.75,0.24],[0.85,0.2],
+                    [0.2,0.4],[0.3,0.42],[0.4,0.44],[0.5,0.45],[0.6,0.44],[0.7,0.42],[0.8,0.4],
+                    [0.25,0.6],[0.35,0.61],[0.45,0.62],[0.55,0.62],[0.65,0.61],[0.75,0.6]
+                ];
+            }
+
+            // 月亮形状
+            createMoonShape() {
+                return [
+                    [0.5,0.25],[0.55,0.3],[0.58,0.35],[0.59,0.4],[0.58,0.45],[0.55,0.5],[0.5,0.55],
+                    [0.45,0.57],[0.4,0.58],[0.35,0.57],[0.32,0.54],[0.3,0.5],[0.3,0.45],[0.32,0.4],
+                    [0.35,0.35],[0.4,0.32],[0.45,0.3]
+                ];
+            }
+
+            // 土豆形状
+            createPotatoShape() {
+                return [
+                    [0.4,0.4],[0.45,0.37],[0.5,0.36],[0.55,0.37],[0.6,0.4],
+                    [0.63,0.45],[0.64,0.5],[0.63,0.55],[0.6,0.6],[0.55,0.62],
+                    [0.5,0.63],[0.45,0.62],[0.4,0.6],[0.37,0.55],[0.36,0.5],
+                    [0.37,0.45]
+                ];
+            }
+
+            // 兔子形状
+            createRabbitShape() {
+                return [
+                    [0.4,0.3],[0.37,0.25],[0.34,0.2],[0.42,0.22],[0.45,0.25], // 耳朵
+                    [0.4,0.35],[0.45,0.37],[0.5,0.38],[0.55,0.37],[0.6,0.35], // 头
+                    [0.45,0.42],[0.5,0.43],[0.55,0.42], // 身体
+                    [0.47,0.47],[0.5,0.48],[0.53,0.47]  // 脚
+                ];
+            }
+            // =================================================================
+
+            // ========== 列表模式 - 优化点击 ==========
+            renderGalaxyList() {
+                const list = document.getElementById('galaxyList');
+                list.innerHTML = '';
+                
+                const uncategorized = this.stars.filter(s => s.hasContent && !s.galaxyId).length;
+                
+                // ✅ 游离银河：统一图标 🌌
+                const freeDiv = document.createElement('div');
+                freeDiv.className = `galaxy-card glass-card rounded-xl p-4 border border-white/10 ${this.currentDetailGalaxyId === null ? 'active' : ''}`;
+                freeDiv.innerHTML = `
+                    <div class="flex items-center gap-3 pointer-events-none">
+                        <span class="text-2xl">🌌</span>
+                        <div class="flex-1">
+                            <h3 class="text-white/90 font-medium text-sm">游离银河</h3>
+                            <p class="text-xs text-white/40">${uncategorized} 颗星光</p>
+                        </div>
+                    </div>
+                `;
+                freeDiv.onmousedown = (e) => {
+                    e.preventDefault();
+                    this.showGalaxyDetail(null);
+                };
+                list.appendChild(freeDiv);
+                
+                // 各星系
+                this.galaxies.forEach(galaxy => {
+                    const count = this.stars.filter(s => s.hasContent && s.galaxyId === galaxy.id).length;
+                    const div = document.createElement('div');
+                    div.className = `galaxy-card glass-card rounded-xl p-4 border border-white/10 ${this.currentDetailGalaxyId === galaxy.id ? 'active' : ''}`;
+                    div.innerHTML = `
+                        <div class="flex items-center justify-between pointer-events-none">
+                            <div class="flex items-center gap-3">
+                                <span class="text-2xl">${galaxy.icon}</span>
+                                <div class="flex-1 min-w-0">
+                                    <h3 class="text-white/90 font-medium text-sm truncate">${galaxy.name}</h3>
+                                    <p class="text-xs text-white/40">${count} 颗星光</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'text-white/20 hover:text-red-400 transition-colors p-2 absolute right-2 top-1/2 -translate-y-1/2';
+                    deleteBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1 1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>`;
+                    deleteBtn.onmousedown = (e) => {
+                        e.stopPropagation();
+                        this.deleteGalaxy(galaxy.id);
+                    };
+                    div.appendChild(deleteBtn);
+                    
+                    div.onmousedown = (e) => {
+                        if (e.target.closest('button')) return;
+                        e.preventDefault();
+                        this.showGalaxyDetail(galaxy.id);
+                    };
+                    
+                    list.appendChild(div);
+                });
+            }
+            
+            showGalaxyDetail(galaxyId) {
+                this.currentDetailGalaxyId = galaxyId;
+                this.renderGalaxyList();
+                
+                const detail = document.getElementById('galaxyDetail');
+                const stars = galaxyId 
+                    ? this.stars.filter(s => s.hasContent && s.galaxyId === galaxyId)
+                    : this.stars.filter(s => s.hasContent && !s.galaxyId);
+                
+                // ✅ 游离银河统一显示图标 🌌
+                const galaxy = galaxyId ? this.galaxies.find(g => g.id === galaxyId) : { icon: '🌌', name: '游离银河' };
+                
+                document.getElementById('detailGalaxyName').textContent = galaxy ? `${galaxy.icon} ${galaxy.name}` : '🌌 游离银河';
+                document.getElementById('detailStarCount').textContent = stars.length;
+                
+                const list = document.getElementById('galaxyStarsList');
+                list.innerHTML = '';
+                
+                if (stars.length === 0) {
+                    list.innerHTML = `
+                        <div class="flex flex-col items-center justify-center text-white/20 space-y-4 py-12">
+                            <svg class="w-16 h-16 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                            </svg>
+                            <p class="text-sm">这片星系还没有星光</p>
+                        </div>
+                    `;
+                } else {
+                    stars.forEach(star => {
+                        const item = document.createElement('div');
+                        item.className = 'star-list-item glass-card p-4 rounded-xl border border-white/10 no-select';
+                        
+                        const contentDiv = document.createElement('div');
+                        contentDiv.className = 'flex items-start gap-4 pointer-events-none mb-2';
+                        contentDiv.innerHTML = `
+                            <div class="w-2 h-2 rounded-full mt-3 ml-1 flex-shrink-0" style="background-color: ${star.color}; box-shadow: 0 0 8px ${star.color}"></div>
+                            <div class="flex-1 min-w-0 star-content-wrapper">
+                                <p class="text-white/90 text-sm leading-relaxed">${star.content}</p>
+                            </div>
+                        `;
+                        item.appendChild(contentDiv);
+                        
+                        const metaDiv = document.createElement('div');
+                        metaDiv.className = 'flex justify-between items-center pointer-events-none';
+                        
+                        const authorDiv = document.createElement('div');
+                        authorDiv.className = 'text-xs text-white/40 star-author-wrapper';
+                        authorDiv.textContent = star.author ? star.author : '';
+                        metaDiv.appendChild(authorDiv);
+                        
+                        const selectWrapper = document.createElement('div');
+                        selectWrapper.className = 'select-wrapper';
+                        const select = document.createElement('select');
+                        select.className = 'galaxy-select';
+                        select.innerHTML = `<option value="" ${!star.galaxyId ? 'selected' : ''}>🌌 游离银河</option>` +
+                            this.galaxies.map(g => `<option value="${g.id}" ${g.id === star.galaxyId ? 'selected' : ''}>${g.icon} ${g.name}</option>`).join('');
+                        
+                        select.onmousedown = (e) => {
+                            e.stopPropagation();
+                        };
+                        select.onchange = (e) => {
+                            e.stopPropagation();
+                            this.changeStarGalaxy(star.id, e.target.value);
+                        };
+                        
+                        selectWrapper.appendChild(select);
+                        metaDiv.appendChild(selectWrapper);
+                        item.appendChild(metaDiv);
+                        
+                        item.onmousedown = (e) => {
+                            if (e.target.tagName === 'SELECT' || e.target.closest('.select-wrapper')) return;
+                            e.preventDefault();
+                            this.closeGalaxyDetail();
+                            setTimeout(() => this.openStarInput(star), 50);
+                        };
+                        
+                        list.appendChild(item);
+                    });
+                }
+                
+                detail.classList.remove('hidden');
+                setTimeout(() => detail.classList.remove('translate-x-full'), 10);
+            }
+            
+            closeGalaxyDetail() {
+                this.currentDetailGalaxyId = null;
+                this.renderGalaxyList();
+                const detail = document.getElementById('galaxyDetail');
+                detail.classList.add('translate-x-full');
+                setTimeout(() => detail.classList.add('hidden'), 300);
+            }
+            
+            changeStarGalaxy(starId, galaxyId) {
+                const star = this.stars.find(s => s.id === starId);
+                if (star) {
+                    star.galaxyId = galaxyId || null;
+                    this.saveData();
+                    setTimeout(() => this.showGalaxyDetail(this.currentDetailGalaxyId), 100);
+                }
+            }
+            
+            createGalaxy() {
+                document.getElementById('galaxyModal').classList.remove('hidden');
+                document.getElementById('galaxyModal').classList.add('flex');
+                document.getElementById('galaxyName').value = '';
+                document.getElementById('galaxyName').focus();
+            }
+            
+            closeGalaxyModal() {
+                document.getElementById('galaxyModal').classList.add('hidden');
+                document.getElementById('galaxyModal').classList.remove('flex');
+            }
+            
+            confirmCreateGalaxy() {
+                const name = document.getElementById('galaxyName').value.trim();
+                if (!name) return;
+                
+                const icons = ['🌟', '✨', '💫', '🌙', '☄️', '🪐', '🔮', '📦', '🎭', '🎨', '🎵', '📚', '🔥', '❄️', '🌊'];
+                this.galaxies.push({
+                    id: 'galaxy_' + Date.now(),
+                    name: name,
+                    icon: icons[Math.floor(Math.random() * icons.length)]
+                });
+                
+                this.saveData();
+                this.closeGalaxyModal();
+            }
+            
+            deleteGalaxy(galaxyId) {
+                if (!confirm('解散星系？星星将回到银河。')) return;
+                this.stars.forEach(s => { if (s.galaxyId === galaxyId) s.galaxyId = null; });
+                this.galaxies = this.galaxies.filter(g => g.id !== galaxyId);
+                this.saveData();
+                if (this.currentDetailGalaxyId === galaxyId) {
+                    this.closeGalaxyDetail();
+                }
+            }
+            
+            animate() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                this.bgStars.forEach(bg => {
+                    bg.twinkle += bg.twinkleSpeed;
+                    const alpha = bg.alpha + Math.sin(bg.twinkle) * 0.15;
+                    this.ctx.beginPath();
+                    this.ctx.arc(bg.x * this.canvas.width, bg.y * this.canvas.height, bg.size, 0, Math.PI * 2);
+                    this.ctx.fillStyle = `rgba(255, 255, 255, ${Math.max(0, alpha)})`;
+                    this.ctx.fill();
+                });
+                
+                // 星系排布模式：连线
+                if (this.inGalaxyLayout) {
+                    this.ctx.lineWidth = 1;
+                    this.ctx.strokeStyle = 'rgba(180, 200, 255, 0.15)';
+                    
+                    const groups = {
+                        free: this.stars.filter(s => s.hasContent && !s.galaxyId),
+                        potato: this.stars.filter(s => s.hasContent && s.galaxyId === 'potato'),
+                        rabbit: this.stars.filter(s => s.hasContent && s.galaxyId === 'rabbit'),
+                        dream: this.stars.filter(s => s.hasContent && s.galaxyId === 'dream')
+                    };
+
+                    for (const key in groups) {
+                        const group = groups[key];
+                        for (let i = 0; i < group.length; i++) {
+                            const s1 = group[i];
+                            const x1 = s1.x * this.canvas.width;
+                            const y1 = s1.y * this.canvas.height;
+
+                            for (let j = i + 1; j < group.length; j++) {
+                                const s2 = group[j];
+                                const x2 = s2.x * this.canvas.width;
+                                const y2 = s2.y * this.canvas.height;
+                                const d = Math.hypot(x2 - x1, y2 - y1);
+                                if (d < 100) {
+                                    this.ctx.beginPath();
+                                    this.ctx.moveTo(x1, y1);
+                                    this.ctx.lineTo(x2, y2);
+                                    this.ctx.globalAlpha = 0.2;
+                                    this.ctx.stroke();
+                                }
+                            }
+                        }
+                    }
+                    this.ctx.globalAlpha = 1;
+                }
+
+                // 普通连线：游离银河
+                if (!this.inGalaxyLayout && !this.inStargazing) {
+                    const freeStars = this.stars.filter(s => s.hasContent && !s.galaxyId);
+                    this.ctx.strokeStyle = 'rgba(147, 197, 253, 0.06)';
+                    this.ctx.lineWidth = 1;
+                    for (let i = 0; i < freeStars.length; i++) {
+                        for (let j = i + 1; j < freeStars.length; j++) {
+                            const s1 = freeStars[i];
+                            const s2 = freeStars[j];
+                            const x1 = s1.x * this.canvas.width; const y1 = s1.y * this.canvas.height;
+                            const x2 = s2.x * this.canvas.width; const y2 = s2.y * this.canvas.height;
+                            const dist = Math.hypot(x2 - x1, y2 - y1);
+                            if (dist < 120) {
+                                this.ctx.beginPath(); this.ctx.moveTo(x1, y1); this.ctx.lineTo(x2, y2);
+                                this.ctx.globalAlpha = (1 - dist / 120) * 0.5; this.ctx.stroke();
+                            }
+                        }
+                    }
+                    this.ctx.globalAlpha = 1;
+                }
+                
+                this.stars.forEach((star) => {
+                    if (!this.inGalaxyLayout && !star.galaxyId && (!this.draggedStar || this.draggedStar !== star)) {
+                        star.x += star.vx * 0.005;
+                        star.y += star.vy * 0.005;
+                        if (star.x < 0.02 || star.x > 0.98) star.vx *= -1;
+                        if (star.y < 0.02 || star.y > 0.98) star.vy *= -1;
+                    }
+                    
+                    star.twinkle += 0.02;
+                    
+                    const x = star.x * this.canvas.width;
+                    const y = star.y * this.canvas.height;
+                    
+                    const hasContent = star.hasContent;
+                    const baseSize = hasContent ? star.size : 1.5;
+                    const twinkle = 0.6 + Math.sin(star.twinkle) * 0.4;
+                    
+                    let isHighlighted = false;
+                    let glowSize = 1;
+                    
+                    if (this.inStargazing && (this.stargazeGalaxyId ? star.galaxyId === this.stargazeGalaxyId : hasContent)) {
+                        isHighlighted = true;
+                        glowSize = 2;
+                    } else if (star.isFlightActive) {
+                        isHighlighted = true;
+                        glowSize = 2.5;
+                    } else if (star === this.hoveredStar) {
+                        isHighlighted = true;
+                        glowSize = 1.3;
+                    }
+                    
+                    if (hasContent) {
+                        const gradient = this.ctx.createRadialGradient(x, y, 0, x, y, baseSize * 3 * glowSize);
+                        gradient.addColorStop(0, star.color);
+                        gradient.addColorStop(0.5, star.color + '30');
+                        gradient.addColorStop(1, 'transparent');
+                        
+                        this.ctx.beginPath();
+                        this.ctx.arc(x, y, baseSize * 3 * glowSize, 0, Math.PI * 2);
+                        this.ctx.fillStyle = gradient;
+                        this.ctx.globalAlpha = isHighlighted ? twinkle * 0.8 : twinkle * 0.4;
+                        this.ctx.fill();
+                    }
+                    
+                    this.ctx.beginPath();
+                    this.ctx.arc(x, y, baseSize * (isHighlighted ? 1.2 : 1), 0, Math.PI * 2);
+                    this.ctx.fillStyle = hasContent ? star.color : '#FFFFFF';
+                    this.ctx.globalAlpha = isHighlighted ? 1 : (hasContent ? twinkle : 0.5);
+                    this.ctx.fill();
+                    
+                    if (star === this.draggedStar || (hasContent && isHighlighted && !this.draggedStar)) {
+                        this.ctx.beginPath();
+                        this.ctx.arc(x, y, baseSize + 4, 0, Math.PI * 2);
+                        this.ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+                        this.ctx.lineWidth = 1.5;
+                        this.ctx.globalAlpha = 0.6;
+                        this.ctx.stroke();
+                    }
+                    
+                    this.ctx.globalAlpha = 1;
+                });
+                
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+        
+        const app = new StarryUniverse();
+    </script>
+</body>
+</html>
