@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -276,6 +275,23 @@
             </button>
         </div>
     </header>
+
+    <!-- 左下角：备份 / 导入 功能区 -->
+    <div class="absolute bottom-6 left-6 z-30 flex gap-3 pointer-events-auto">
+        <button onclick="app.exportBackup()" class="glass-card px-4 py-2 rounded-full text-sm hover:bg-white/10 transition-all flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+            </svg>
+            <span>备份星光</span>
+        </button>
+        <button onclick="document.getElementById('importFile').click()" class="glass-card px-4 py-2 rounded-full text-sm hover:bg-white/10 transition-all flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+            </svg>
+            <span>导入星光</span>
+        </button>
+        <input type="file" id="importFile" accept=".json" class="hidden" onchange="app.importBackup(event)">
+    </div>
 
     <!-- 飞行模式 -->
     <div id="flightMode" class="fixed inset-0 z-40 flex flex-col items-center justify-center pointer-events-none opacity-0 transition-opacity duration-700 bg-black/70 backdrop-blur-sm">
@@ -1034,6 +1050,50 @@
             }
             // =================================================================
 
+            // ========== 备份 / 导入 功能 ==========
+            exportBackup() {
+                const data = {
+                    stars: this.stars,
+                    galaxies: this.galaxies
+                };
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `星光语录_备份_${new Date().toLocaleDateString()}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                alert('✅ 星光备份成功！可保存到手机/电脑，跨设备导入使用');
+            }
+
+            importBackup(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        if (!data.stars || !data.galaxies) {
+                            alert('❌ 备份文件格式错误');
+                            return;
+                        }
+
+                        if (confirm('⚠️ 导入会覆盖当前所有星光和星系，确定继续吗？')) {
+                            this.stars = data.stars;
+                            this.galaxies = data.galaxies;
+                            this.saveData();
+                            alert('✅ 星光导入成功！');
+                            location.reload();
+                        }
+                    } catch (err) {
+                        alert('❌ 备份文件解析失败');
+                    }
+                };
+                reader.readAsText(file);
+            }
+            // ======================================
+            
             // ========== 列表模式 - 优化点击 ==========
             renderGalaxyList() {
                 const list = document.getElementById('galaxyList');
