@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -1430,5 +1431,55 @@
         
         const app = new StarryUniverse();
     </script>
+<style>
+.cosmic-music-btn {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #1a1a35;
+  border: 2px solid #809fff;
+  color: white;
+  font-size: 22px;
+  cursor: pointer;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.3s;
+}
+.cosmic-music-btn:hover {
+  transform: scale(1.1);
+  border-color: #a1b8ff;
+}
+</style>
+
+<audio id="cosmicAudio" loop>
+  <!-- 你自己上传的 · 真正肖邦夜曲 · 100%能播放 -->
+  <source src="https://raw.githubusercontent.com/Suellen26/Suellen26.github.io/main/Nocturne%20in%20B%20flat%20minor%2C%20Op.%209%20no.%201.mp3" type="audio/mpeg">
+</audio>
+
+<button id="musicBtn" class="cosmic-music-btn">▶</button>
+
+<script>
+const audio = document.getElementById('cosmicAudio');
+const btn = document.getElementById('musicBtn');
+let isPlaying = false;
+
+btn.onclick = function() {
+    audio.volume = 0.35;
+    if (!isPlaying) {
+        audio.play();
+        btn.innerText = "⏸";
+        isPlaying = true;
+    } else {
+        audio.pause();
+        btn.innerText = "▶";
+        isPlaying = false;
+    }
+}
+</script>
 </body>
 </html>
